@@ -20,7 +20,7 @@ impl fmt::Display for LexerError {
 
 pub struct Lexer {
     tokens: Vec<Token>,
-    current_line: String,
+    input: String,
     current_token_start: usize,
     current_pos: usize,
 }
@@ -29,14 +29,14 @@ impl Lexer {
     pub fn new() -> Self {
         Self {
             tokens: Vec::new(),
-            current_line: String::new(),
+            input: String::new(),
             current_token_start: 0,
             current_pos: 0,
         }
     }
 
-    pub fn lex(&mut self, line: String) -> Result<&Vec<Token>, LexerError> {
-        self.current_line = line;
+    pub fn lex(&mut self, input: String) -> Result<&Vec<Token>, LexerError> {
+        self.input = input;
 
         loop {
             self.current_token_start = self.current_pos;
@@ -75,16 +75,16 @@ impl Lexer {
     }
 
     fn peek(&self, steps: usize) -> Result<char, LexerError> {
-        if self.current_pos + steps >= self.current_line.len() {
+        if self.current_pos + steps >= self.input.len() {
             return Err(PeekNone);
         }
-        return Ok(self.current_line.as_bytes()[self.current_pos + steps] as char);
+        return Ok(self.input.as_bytes()[self.current_pos + steps] as char);
     }
 
     fn add_token(&mut self, token_type: TokenType) {
         self.tokens.push(Token {
             token_type,
-            content: self.current_line[self.current_token_start..self.current_pos + 1].to_string(),
+            content: self.input[self.current_token_start..self.current_pos + 1].to_string(),
             position: TokenPosition { start: self.current_token_start, end: self.current_pos },
         })
     }
