@@ -13,3 +13,6 @@ Cargo.lock
 .idea
 *.iml
 *.xml
+
+# Vim
+*.swp
