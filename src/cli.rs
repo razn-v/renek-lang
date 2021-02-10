@@ -1,6 +1,7 @@
 use std::io::{stdin, stdout, Write};
 
 use crate::lexer::lexer::Lexer;
+use crate::parser::parser::Parser;
 
 pub fn interactive() {
     loop {
@@ -8,7 +9,13 @@ pub fn interactive() {
         let input = get_input();
 
         match lexer.lex(input) {
-            Ok(tokens) => println!("{:?}", tokens),
+            Ok(tokens) => {
+                println!("{:?}", tokens);
+                println!();
+
+                let mut parser = Parser::new(tokens.clone().to_vec());
+                parser.parse();
+            },
             Err(err) => println!("{}", err),
         }
     }

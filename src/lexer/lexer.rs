@@ -121,7 +121,7 @@ impl Lexer {
     }
 
     fn get_keyword_token(&mut self) {
-        while self.is_letter(self.peek(1)) {
+        while self.is_letter(self.peek(1)) || self.is_digit(self.peek(1)) {
             self.step();
         }
         self.add_token(TokenType::Keyword);

@@ -1,11 +1,11 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub content: String,
     pub position: TokenPosition,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum TokenType {
     Keyword,
     Number,
@@ -15,7 +15,7 @@ pub enum TokenType {
     Separator,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TokenPosition {
     pub start: usize,
     pub end: usize,
