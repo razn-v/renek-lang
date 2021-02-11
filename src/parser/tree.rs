@@ -56,3 +56,10 @@ pub struct FunctionCall {
 }
 
 impl ParseNode for FunctionCall {}
+
+#[derive(Debug)]
+pub struct VariableCall {
+    pub name: String,
+}
+
+impl ParseNode for VariableCall {}

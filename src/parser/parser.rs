@@ -1,8 +1,13 @@
 use std::fmt::Debug;
 
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::tree::{BoolNode, FunctionCall, Node, NumberNode, ParseNode, ParseTree, StringNode, VariableNode};
-use crate::parser::types::Type;
+use crate::parser::{
+    tree::{
+        BoolNode, FunctionCall, Node, NumberNode, ParseNode, ParseTree, StringNode, VariableCall,
+        VariableNode,
+    },
+    types::Type,
+};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -112,6 +117,11 @@ impl Parser {
             return func_call;
         }
 
+        let var_call = self.parse_var_call();
+        if var_call.is_some() {
+            return var_call;
+        }
+
         None
     }
 
@@ -150,11 +160,15 @@ impl Parser {
             return None;
         }
 
+        let init_pos = self.current_pos;
+
         // Skip "var" keyword
         self.step(1);
 
         if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
             println!("Invalid variable name");
+            self.current_pos = init_pos;
+
             return None;
         }
 
@@ -165,6 +179,8 @@ impl Parser {
 
         if !self.equals_content("::") {
             self.expected("::");
+            self.current_pos = init_pos;
+
             return None;
         }
 
@@ -173,6 +189,8 @@ impl Parser {
 
         if !self.equals_type(TokenType::Keyword) {
             println!("Invalid variable type");
+            self.current_pos = init_pos;
+
             return None;
         }
 
@@ -180,6 +198,8 @@ impl Parser {
             Some(t) => t,
             None => {
                 println!("Invalid variable type");
+                self.current_pos = init_pos;
+
                 return None;
             }
         };
@@ -189,6 +209,8 @@ impl Parser {
 
         if !self.equals_content("=") {
             self.expected("=");
+            self.current_pos = init_pos;
+
             return None;
         }
 
@@ -199,6 +221,8 @@ impl Parser {
         return match var_value {
             None => {
                 println!("Invalid variable value");
+                self.current_pos = init_pos;
+
                 None
             }
             Some(node) => Some(Box::new(VariableNode {
@@ -209,18 +233,29 @@ impl Parser {
         };
     }
 
+    fn parse_var_call(&mut self) -> Option<Node> {
+        if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
+            return None;
+        }
+
+        Some(Box::new(VariableCall {
+            name: self.peek(0).unwrap().content.clone()
+        }))
+    }
+
     fn parse_func_call(&mut self) -> Option<Node> {
         if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
             return None;
         }
 
+        let init_pos = self.current_pos;
         let func_name = self.peek(0).unwrap().content.clone();
 
         // Skip function name
         self.step(1);
 
         if !self.equals_content("(") {
-            self.expected("(");
+            self.current_pos = init_pos;
             return None;
         }
 
@@ -232,7 +267,8 @@ impl Parser {
 
         while self.peek(0).is_some() && !self.equals_content(")") {
             match self.parse_expr() {
-                None => println!("Invalid function parameter '{}'", self.peek(0).unwrap().content),
+                None => println!("Invalid function parameter '{}'",
+                                 self.peek(0).unwrap().content),
                 Some(arg) => func_args.push(arg)
             }
 
