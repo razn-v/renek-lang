@@ -1,5 +1,8 @@
 use std::fmt::Debug;
+
 use crate::parser::types::Type;
+
+pub type Node = Box<dyn ParseNode>;
 
 pub struct ParseTree {
     nodes: Vec<Box<dyn ParseNode>>
@@ -45,3 +48,11 @@ pub struct StringNode {
 }
 
 impl ParseNode for StringNode {}
+
+#[derive(Debug)]
+pub struct FunctionCall {
+    pub name: String,
+    pub args: Vec<Node>,
+}
+
+impl ParseNode for FunctionCall {}

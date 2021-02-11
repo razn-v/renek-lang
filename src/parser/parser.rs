@@ -1,16 +1,8 @@
 use std::fmt::Debug;
 
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::parser::ParseError::PeekNone;
-use crate::parser::tree::{BoolNode, NumberNode, ParseNode, ParseTree, StringNode, VariableNode};
+use crate::parser::tree::{BoolNode, FunctionCall, Node, NumberNode, ParseNode, ParseTree, StringNode, VariableNode};
 use crate::parser::types::Type;
-
-type Node = Option<Box<dyn ParseNode>>;
-
-#[derive(Debug)]
-pub enum ParseError {
-    PeekNone,
-}
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -33,35 +25,57 @@ impl Parser {
     }
 
     fn step(&mut self, n: usize) -> bool {
-        if self.peek(1).is_ok() {
+        if self.peek(1).is_some() {
             self.current_pos += n;
             return true;
         }
         false
     }
 
-    fn peek(&self, steps: usize) -> Result<&Token, ParseError> {
+    fn peek(&self, steps: usize) -> Option<&Token> {
         if self.current_pos + steps >= self.tokens.len() {
-            return Err(PeekNone);
+            return None;
         }
-        Ok(&self.tokens[self.current_pos + steps])
+        Some(&self.tokens[self.current_pos + steps])
     }
 
     fn equals_type(&self, token_type: TokenType) -> bool {
         match self.peek(0) {
-            Ok(token) => token.token_type == token_type,
+            Some(token) => token.token_type == token_type,
             _ => false
         }
     }
 
     fn equals_content(&self, content: &str) -> bool {
         match self.peek(0) {
-            Ok(token) => token.content == content,
+            Some(token) => token.content == content,
             _ => false
         }
     }
 
-    fn parse_node(&mut self) -> Node {
+    fn is_forbidden_keyword(&self) -> bool {
+        match self.peek(0) {
+            Some(token) => {
+                // If the keyword can be parsed as a type,
+                // it's a forbidden keyword
+                if Type::from_token(token).is_some() {
+                    return true;
+                }
+
+                return match token.content.as_str() {
+                    "var" | "if" | "else" | "return" => true,
+                    _ => false,
+                };
+            }
+            _ => false
+        }
+    }
+
+    fn expected(&self, what: &str) {
+        println!("Expected {}, got {}", what, self.peek(0).unwrap().content);
+    }
+
+    fn parse_node(&mut self) -> Option<Node> {
         // 6 possibilities :
         //  - variable declaration
         //  - function call
@@ -73,10 +87,16 @@ impl Parser {
         if var_decl.is_some() {
             return var_decl;
         }
+
+        let func_call = self.parse_func_call();
+        if func_call.is_some() {
+            return func_call;
+        }
+
         None
     }
 
-    fn parse_expr(&mut self) -> Node {
+    fn parse_expr(&mut self) -> Option<Node> {
         // 4 possibilities :
         //  - operation
         //  - fixed value (boolean, integer...)
@@ -86,10 +106,16 @@ impl Parser {
         if value.is_some() {
             return value;
         }
+
+        let func_call = self.parse_func_call();
+        if func_call.is_some() {
+            return func_call;
+        }
+
         None
     }
 
-    fn parse_value(&mut self) -> Node {
+    fn parse_value(&mut self) -> Option<Node> {
         if self.equals_type(TokenType::Keyword) {
             return self.parse_bool();
         } else if self.equals_type(TokenType::Number) {
@@ -100,7 +126,7 @@ impl Parser {
         None
     }
 
-    fn parse_bool(&mut self) -> Node {
+    fn parse_bool(&mut self) -> Option<Node> {
         if self.equals_content("True") {
             return Some(Box::new(BoolNode { value: true }));
         } else if self.equals_content("False") {
@@ -109,23 +135,28 @@ impl Parser {
         None
     }
 
-    fn parse_number(&mut self) -> Node {
+    fn parse_number(&mut self) -> Option<Node> {
         Some(Box::new(NumberNode {
             int_value: self.peek(0).unwrap().content.parse::<usize>().unwrap()
         }))
     }
 
-    fn parse_string(&mut self) -> Node {
+    fn parse_string(&mut self) -> Option<Node> {
         Some(Box::new(StringNode { value: self.peek(0).unwrap().content.clone() }))
     }
 
-    fn parse_var_decl(&mut self) -> Node {
-        if !self.equals_type(TokenType::Keyword) && !self.equals_content("var") {
+    fn parse_var_decl(&mut self) -> Option<Node> {
+        if !self.equals_content("var") {
             return None;
         }
 
         // Skip "var" keyword
         self.step(1);
+
+        if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
+            println!("Invalid variable name");
+            return None;
+        }
 
         let var_name = self.peek(0).unwrap().content.clone();
 
@@ -133,6 +164,7 @@ impl Parser {
         self.step(1);
 
         if !self.equals_content("::") {
+            self.expected("::");
             return None;
         }
 
@@ -143,20 +175,20 @@ impl Parser {
             println!("Invalid variable type");
             return None;
         }
- 
+
         let var_type = match Type::from_token(self.peek(0).unwrap()) {
             Some(t) => t,
             None => {
                 println!("Invalid variable type");
                 return None;
             }
-        };  
-        
+        };
+
         // Skip variable type
         self.step(1);
 
         if !self.equals_content("=") {
-            println!("Invalid operator");
+            self.expected("=");
             return None;
         }
 
@@ -175,5 +207,44 @@ impl Parser {
                 value: node,
             }))
         };
+    }
+
+    fn parse_func_call(&mut self) -> Option<Node> {
+        if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
+            return None;
+        }
+
+        let func_name = self.peek(0).unwrap().content.clone();
+
+        // Skip function name
+        self.step(1);
+
+        if !self.equals_content("(") {
+            self.expected("(");
+            return None;
+        }
+
+        // Skip opened parenthesis
+        self.step(1);
+
+        // Parse function arguments
+        let mut func_args = Vec::<Node>::new();
+
+        while self.peek(0).is_some() && !self.equals_content(")") {
+            match self.parse_expr() {
+                None => println!("Invalid function parameter '{}'", self.peek(0).unwrap().content),
+                Some(arg) => func_args.push(arg)
+            }
+
+            self.step(1);
+            if self.equals_content(",") {
+                self.step(1);
+            }
+        }
+
+        Some(Box::new(FunctionCall {
+            name: func_name,
+            args: func_args,
+        }))
     }
 }
