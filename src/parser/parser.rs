@@ -1,10 +1,7 @@
-use std::fmt::Debug;
-
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::{
     tree::{
-        BoolNode, FunctionCall, Node, NumberNode, ParseNode, ParseTree, StringNode, VariableCall,
-        VariableNode,
+        BoolNode, FunctionCall, Node, NumberNode, ParseTree, StringNode, VariableCall, VariableNode,
     },
     types::Type,
 };
@@ -233,16 +230,6 @@ impl Parser {
         };
     }
 
-    fn parse_var_call(&mut self) -> Option<Node> {
-        if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
-            return None;
-        }
-
-        Some(Box::new(VariableCall {
-            name: self.peek(0).unwrap().content.clone()
-        }))
-    }
-
     fn parse_func_call(&mut self) -> Option<Node> {
         if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
             return None;
@@ -281,6 +268,16 @@ impl Parser {
         Some(Box::new(FunctionCall {
             name: func_name,
             args: func_args,
+        }))
+    }
+
+    fn parse_var_call(&mut self) -> Option<Node> {
+        if !self.equals_type(TokenType::Keyword) || self.is_forbidden_keyword() {
+            return None;
+        }
+
+        Some(Box::new(VariableCall {
+            name: self.peek(0).unwrap().content.clone()
         }))
     }
 }
