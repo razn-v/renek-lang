@@ -5,6 +5,7 @@ use crate::parser::{
     },
     types::Type,
 };
+use crate::parser::tree::BlockNode;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -78,6 +79,13 @@ impl Parser {
     }
 
     fn parse_node(&mut self) -> Option<Node> {
+        while self.equals_content("\n") {
+            if !self.step(1) {
+                println!("Peek out of range");
+                return None;
+            }
+        }
+
         // 6 possibilities :
         //  - variable declaration
         //  - function call
@@ -93,6 +101,11 @@ impl Parser {
         let func_call = self.parse_func_call();
         if func_call.is_some() {
             return func_call;
+        }
+
+        let block = self.parse_block();
+        if block.is_some() {
+            return block;
         }
 
         None
@@ -279,5 +292,28 @@ impl Parser {
         Some(Box::new(VariableCall {
             name: self.peek(0).unwrap().content.clone()
         }))
+    }
+
+    fn parse_block(&mut self) -> Option<Node> {
+        if !self.equals_content("{") {
+            return None;
+        }
+
+        self.step(1);
+
+        let mut nodes = Vec::<Node>::new();
+        while !self.equals_content("}") {
+            match self.parse_node() {
+                None => break,
+                Some(node) => nodes.push(node)
+            }
+
+            if !self.step(1) {
+                println!("Could not find the end of the block!");
+                break;
+            }
+        }
+
+        Some(Box::new(BlockNode { nodes }))
     }
 }

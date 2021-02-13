@@ -34,7 +34,7 @@ pub struct BoolNode {
 
 impl ParseNode for BoolNode {}
 
-// TODO: support floats
+// TODO: support floats and negative numbers
 #[derive(Debug)]
 pub struct NumberNode {
     pub int_value: usize,
@@ -63,3 +63,10 @@ pub struct VariableCall {
 }
 
 impl ParseNode for VariableCall {}
+
+#[derive(Debug)]
+pub struct BlockNode {
+    pub nodes: Vec<Node>,
+}
+
+impl ParseNode for BlockNode {}
