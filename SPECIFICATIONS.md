@@ -25,3 +25,14 @@ Variables are declared in the following way:
 ```
 var hello :: String = "hello"
 ```
+
+### Function declaration
+
+Function are declared in the following way:
+`fcn <function_name>(<parameter> :: <type>, ...) -> <return_type>`
+
+```
+fcn mul(x :: Int64, y :: Int64) -> Int64 {
+    return x * y
+}
+```
