@@ -5,7 +5,7 @@ use crate::parser::types::Type;
 pub type Node = Box<dyn ParseNode>;
 
 pub struct ParseTree {
-    nodes: Vec<Box<dyn ParseNode>>
+    nodes: Vec<Box<dyn ParseNode>>,
 }
 
 impl ParseTree {
@@ -70,3 +70,21 @@ pub struct BlockNode {
 }
 
 impl ParseNode for BlockNode {}
+
+#[derive(Debug)]
+pub struct FunctionNode {
+    pub name: String,
+    pub args: Vec<FunctionArg>,
+    pub return_type: Type,
+    pub block: Box<dyn ParseNode>,
+}
+
+impl ParseNode for FunctionNode {}
+
+#[derive(Debug)]
+pub struct FunctionArg {
+    pub var_type: Type,
+    pub name: String,
+}
+
+impl ParseNode for FunctionArg {}

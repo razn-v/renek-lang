@@ -50,10 +50,10 @@ impl Lexer {
                     Err(err) => return Err(err),
                     _ => {}
                 }
-            } else if self.is_operator() {
-                self.get_operator_token();
             } else if self.is_symbol() {
                 self.get_symbol_token();
+            } else if self.is_operator() {
+                self.get_operator_token();
             } else if self.is_separator() {
                 self.get_separator_token();
             }

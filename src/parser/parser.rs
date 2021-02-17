@@ -2,10 +2,10 @@ use crate::lexer::token::{Token, TokenType};
 use crate::parser::{
     tree::{
         BoolNode, FunctionCall, Node, NumberNode, ParseTree, StringNode, VariableCall, VariableNode,
+        BlockNode, FunctionNode, FunctionArg,
     },
     types::Type,
 };
-use crate::parser::tree::BlockNode;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -23,8 +23,8 @@ impl Parser {
     }
 
     pub fn parse(&mut self) {
-        let node = self.parse_node();
-        println!("{:?}", node);
+        let func = self.parse_func_decl();
+        println!("{:?}", func);
     }
 
     fn step(&mut self, n: usize) -> bool {
@@ -315,5 +315,99 @@ impl Parser {
         }
 
         Some(Box::new(BlockNode { nodes }))
+    }
+ 
+    fn parse_func_decl(&mut self) -> Option<Node> {
+        if !self.equals_content("fcn") {
+            return None;
+        }
+        self.step(1);
+
+        if !self.equals_type(TokenType::Keyword) {
+            return None;
+        }
+
+        let func_name = self.peek(0).unwrap().content.clone();
+        self.step(1);
+
+        if !self.equals_content("(") {
+            self.expected("(");
+            return None;
+        }
+        self.step(1);
+
+        // Parse function arguments
+        let mut func_args = Vec::<FunctionArg>::new();
+
+        while self.peek(0).is_some() && !self.equals_content(")") {
+            if !self.equals_type(TokenType::Keyword) {
+                println!("Invalid argument name");
+                return None;
+            }
+
+            let arg_name = self.peek(0).unwrap().content.clone();
+            self.step(1);
+
+            if !self.equals_content("::") {
+                self.expected("::");
+                return None;
+            }
+            self.step(1);
+
+            let arg_type = match Type::from_token(self.peek(0).unwrap()) {
+                Some(t) => t,
+                None => {
+                    println!("Invalid argument type");
+                    return None;
+                }
+            };
+
+            func_args.push(FunctionArg {
+                var_type: arg_type,
+                name: arg_name,
+            });
+
+            self.step(1);
+            if self.equals_content(",") {
+                self.step(1);
+            }
+        };
+
+        // Skip last parenthesis
+        self.step(1);
+
+        if !self.equals_content("->") {
+            self.expected("->");
+            return None;
+        }
+
+        // Skip arrow
+        self.step(1);
+
+        let return_type = match Type::from_token(self.peek(0).unwrap()) {
+            Some(t) => t,
+            None => {
+                println!("Invalid return type");
+                return None;
+            }
+        };
+
+        // Skip return type
+        self.step(1);
+
+        let block = match self.parse_block() {
+            Some(b) => b,
+            None => {
+                println!("Invalid block");
+                return None;
+            }
+        };
+
+        Some(Box::new(FunctionNode {
+            name: func_name,
+            args: func_args,
+            return_type,
+            block,
+        })) 
     }
 }
