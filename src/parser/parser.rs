@@ -2,9 +2,10 @@ use crate::lexer::token::{Token, TokenType};
 use crate::parser::{
     tree::{
         BoolNode, FunctionCall, Node, NumberNode, ParseTree, StringNode, VariableCall, VariableNode,
-        BlockNode, FunctionNode, FunctionArg,
+        BlockNode, FunctionNode, FunctionArg, StatementNode,
     },
     types::Type,
+    statements::Statement,
 };
 
 pub struct Parser {
@@ -91,7 +92,7 @@ impl Parser {
         //  - function call
         //  - condition
         //  - loop
-        //  - block 
+        //  - block
         //  - statement (return, break...)
         let var_decl = self.parse_var_decl();
         if var_decl.is_some() {
@@ -106,6 +107,11 @@ impl Parser {
         let block = self.parse_block();
         if block.is_some() {
             return block;
+        }
+
+        let statement = self.parse_statement();
+        if statement.is_some() {
+            return statement;
         }
 
         None
@@ -316,7 +322,33 @@ impl Parser {
 
         Some(Box::new(BlockNode { nodes }))
     }
- 
+
+    fn parse_statement(&mut self) -> Option<Node> {
+        if !self.equals_type(TokenType::Keyword) {
+            return None;
+        }
+
+        let stat_type = match Statement::from_token(self.peek(0).unwrap()) {
+            Some(s) => s,
+            None => return None,
+        };
+
+        let mut stat_value = None;
+        if stat_type == Statement::Return {
+            self.step(1);
+
+            stat_value = match self.parse_expr() {
+                None => {
+                    println!("Invalid return value");
+                    None
+                }
+                Some(node) => Some(node)
+            };
+        }
+
+        Some(Box::new(StatementNode { stat_type, value: stat_value }))
+    }
+
     fn parse_func_decl(&mut self) -> Option<Node> {
         if !self.equals_content("fcn") {
             return None;
@@ -408,6 +440,6 @@ impl Parser {
             args: func_args,
             return_type,
             block,
-        })) 
+        }))
     }
 }

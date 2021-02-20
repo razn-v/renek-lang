@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crate::parser::types::Type;
+use crate::parser::statements::Statement;
 
 pub type Node = Box<dyn ParseNode>;
 
@@ -88,3 +89,12 @@ pub struct FunctionArg {
 }
 
 impl ParseNode for FunctionArg {}
+
+#[derive(Debug)]
+pub struct StatementNode {
+    pub stat_type: Statement,
+    // Only if the statement is 'return'
+    pub value: Option<Box<dyn ParseNode>>,
+}
+
+impl ParseNode for StatementNode {}
