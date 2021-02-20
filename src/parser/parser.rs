@@ -1,8 +1,8 @@
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::{
     tree::{
-        BoolNode, FunctionCall, Node, NumberNode, ParseTree, StringNode, VariableCall, VariableNode,
-        BlockNode, FunctionNode, FunctionArg, StatementNode,
+        Node, ParseTree, BoolNode, FunctionCallNode, NumberNode, StringNode, VariableCallNode,
+        VariableNode, BlockNode, FunctionNode, FunctionArgNode, StatementNode,
     },
     types::Type,
     statements::Statement,
@@ -284,7 +284,7 @@ impl Parser {
             }
         }
 
-        Some(Box::new(FunctionCall {
+        Some(Box::new(FunctionCallNode {
             name: func_name,
             args: func_args,
         }))
@@ -295,7 +295,7 @@ impl Parser {
             return None;
         }
 
-        Some(Box::new(VariableCall {
+        Some(Box::new(VariableCallNode {
             name: self.peek(0).unwrap().content.clone()
         }))
     }
@@ -369,7 +369,7 @@ impl Parser {
         self.step(1);
 
         // Parse function arguments
-        let mut func_args = Vec::<FunctionArg>::new();
+        let mut func_args = Vec::<FunctionArgNode>::new();
 
         while self.peek(0).is_some() && !self.equals_content(")") {
             if !self.equals_type(TokenType::Keyword) {
@@ -394,7 +394,7 @@ impl Parser {
                 }
             };
 
-            func_args.push(FunctionArg {
+            func_args.push(FunctionArgNode {
                 var_type: arg_type,
                 name: arg_name,
             });

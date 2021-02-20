@@ -51,19 +51,19 @@ pub struct StringNode {
 impl ParseNode for StringNode {}
 
 #[derive(Debug)]
-pub struct FunctionCall {
+pub struct FunctionCallNode {
     pub name: String,
     pub args: Vec<Node>,
 }
 
-impl ParseNode for FunctionCall {}
+impl ParseNode for FunctionCallNode {}
 
 #[derive(Debug)]
-pub struct VariableCall {
+pub struct VariableCallNode {
     pub name: String,
 }
 
-impl ParseNode for VariableCall {}
+impl ParseNode for VariableCallNode {}
 
 #[derive(Debug)]
 pub struct BlockNode {
@@ -75,7 +75,7 @@ impl ParseNode for BlockNode {}
 #[derive(Debug)]
 pub struct FunctionNode {
     pub name: String,
-    pub args: Vec<FunctionArg>,
+    pub args: Vec<FunctionArgNode>,
     pub return_type: Type,
     pub block: Box<dyn ParseNode>,
 }
@@ -83,12 +83,12 @@ pub struct FunctionNode {
 impl ParseNode for FunctionNode {}
 
 #[derive(Debug)]
-pub struct FunctionArg {
+pub struct FunctionArgNode {
     pub var_type: Type,
     pub name: String,
 }
 
-impl ParseNode for FunctionArg {}
+impl ParseNode for FunctionArgNode {}
 
 #[derive(Debug)]
 pub struct StatementNode {
